@@ -4,3 +4,28 @@ format: html
 editor: visual
 ---
 
+
+# Install the 'rentrez' package if you haven't already
+install.packages("rentrez")
+
+# Load the package
+library(rentrez)
+
+# Search the 'nuccore' (nucleotide) database for a specific query
+search_results <- entrez_search(db="nuccore", term="photobiont", retmax=20)
+
+# The search_results object contains the IDs of the matching records
+print(search_results$ids)
+
+# Retrieve the records using their IDs in GenBank format
+records <- entrez_fetch(db="nuccore", id=search_results$ids, rettype="gb", retmode="text")
+
+# Print the first part of the retrieved records
+cat(substring(records, 1, 500))
+
+# To work with the sequences in R, you might need another package like 'seqinr' or parse the GenBank file
+# You can write the records to a file and then parse it using a dedicated package like 'genbankr'
+writeLines(records, "insulin_sequences.gb")
+
+
+

@@ -1,11 +1,8 @@
-install.packages("rentrez")
+#install.packages("rentrez")
 library(rentrez)
 
 # Search the 'nuccore' (nucleotide) database for a specific query
 search_results <- entrez_search(db="nuccore", term="photobiont", retmax=20)
-
-entrez_search(db="nuccore", term="photobiont", retmax=20)
-
 
 # The search_results object contains the IDs of the matching records
 print(search_results$ids)
@@ -18,9 +15,9 @@ cat(substring(records, 1, 2000))
 
 # filter ones that have host or isolation source in the features field 
 
-# dictionary with every lichen genus 
+# make dictionary with every lichen genus 
 
-dictionary <- 
+dictionary <- read.csv("~/lichen_specificity/lichen_specificity/data/lichen_list.csv")
 
 entrez_search(db   = "nuccore",
               term= "(photobiont) AND (dictionary)")

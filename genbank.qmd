@@ -1,9 +1,4 @@
----
-title: "lichen specificity ;)"
-format: html
-editor: visual
----
-
+install.packages("rentrez")
 library(rentrez)
 
 # Search the 'nuccore' (nucleotide) database for a specific query
@@ -19,12 +14,14 @@ print(search_results$ids)
 records <- entrez_fetch(db="nuccore", id=search_results$ids, rettype="gb", retmode="text")
 
 # Print the first part of the retrieved records
-cat(substring(records, 1, 500))
+cat(substring(records, 1, 2000))
 
 # filter ones that have host or isolation source in the features field 
 
-summ <- entrez_summary(db="nuccore", id="2667782060")
-summ
+# dictionary with every lichen genus 
 
-summ$"organism"
+dictionary <- 
+
+entrez_search(db   = "nuccore",
+              term= "(photobiont) AND (dictionary)")
 

@@ -1,0 +1,90 @@
+---
+title: "algatr testing"
+format: html
+editor: visual
+---
+
+#installing algatr and all the packages needed 
+
+```{r}
+
+devtools::install_github("TheWangLab/algatr")
+
+library(algatr)
+
+# Option 1: Install all of the packages for algatr
+
+alazygatr_packages()
+
+# Option 2: Install subsets of packages based on what methods you want to use:
+
+## Genetic distance processing:
+
+gen_dist_packages()
+
+## Genetic data processing:
+
+data_processing_packages()
+
+## Environmental and geographic data processing:
+
+envirodata_packages()
+
+## LFMM:
+
+lfmm_packages()
+
+## RDA:
+
+rda_packages()
+
+## MMRR:
+
+mmrr_packages()
+
+## GDM:
+
+gdm_packages()
+
+## TESS:
+
+tess_packages()
+
+## wingen:
+
+wingen_packages()
+
+```
+
+#load example lizard dataset
+
+```{r}
+
+load_algatr_example()
+
+```
+
+#look at CA environmental rasters (obtained from World Clim)
+
+```{r}
+
+plot(CA_env, col = turbo(100), axes = FALSE)
+
+```
+
+#combine rasters so you have some multi environmental raster
+
+env <- scaleRGB(CA_env)
+
+plotRGB(env, r = 1, g = 2, b = 3)
+
+# Add sampling localities on top of this (this has to be done outside a codechunk bc it closes the fig within the codechunk and were trying to add points on top of an open fig)
+
+points(liz_coords, pch = 19)
+
+# now going to try to add our own lichen data!
+
+```{r}
+
+```
+

@@ -4,6 +4,12 @@ format: html
 editor: visual
 ---
 
+20 Feb 2026
+following along with the algatr vignette found at https://thewanglab.github.io/algatr/index.html
+
+and using an example lichen metagenome dataset to replace the lizard one they use 
+
+
 #installing algatr and all the packages needed 
 
 ```{r}
@@ -82,9 +88,62 @@ plotRGB(env, r = 1, g = 2, b = 3)
 
 points(liz_coords, pch = 19)
 
-# now going to try to add our own lichen data!
+# now going to try to add our own lichen data! - Punctelia appalachensis because it has a reference genome 
 
-```{r}
+but it seems like there are 3 steps that go from the fastq data file to the vcf file which is what we need to work with algatr 
+
+following the first 3 scripts from https://github.com/jallen73/Lichen_popgen/tree/main to get vcf files for use in algatr 
+
+
+the following was done in the terminal 
+
+
+Dowload p. appalachiensis fastq files 
+
+```{bash}
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR344/050/SRR34436550/SRR34436550_1.fastq.gz
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR344/050/SRR34436550/SRR34436550_2.fastq.gz
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR344/051/SRR34436551/SRR34436551_1.fastq.gz
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR344/051/SRR34436551/SRR34436551_2.fastq.gz
+```
+
+rename them 
+```{bash}
+mv SRR34436550_1.fastq.gz PUAP_HAW_07c_R1_001.fastq.gz
+mv SRR34436550_2.fastq.gz PUAP_HAW_07c_R2_001.fastq.gz
+mv SRR34436551_1.fastq.gz PUAP_HAW_07b_R1_001.fastq.gz
+mv SRR34436551_2.fastq.gz PUAP_HAW_07b_R2_001.fastq.gz
+```
+
+
+```{bash}
+
+# mv ~/Desktop/lichen_test/*.fastq.gz ~/Documents/Projects/lichen_specificity/
+cd ~/Documents/Projects/lichen_specificity/lichen_specificity
+ls -lh *.fastq.gz
+```
+
+
+# step 2 trimming (second script in the bioinformatics pipeline from jessi) run this in the terminal
+
+```{bash}
+source /opt/miniconda3/etc/profile.d/conda.sh
+conda activate lichen 
 
 ```
 
+
+```{bash}
+ls PUAP_*.fastq.gz | sed -e 's/_R._001.*/_R/' | sort | uniq | while read froot ; do
+        trimmomatic PE ${froot}1_001.fastq.gz ${froot}2_001.fastq.gz ${froot}1_paired_trimmed.fastq.gz ${froot}1_unpaired_trimmed.fastq.gz ${froot}2_paired_trimmed.fastq.gz ${froot}2_unpaired_trimmed.fastq.gz -threads 4 -phred33 -trimlog ${froot}.log SLIDINGWINDOW:5:20 LEADING:20 TRAILING:20 MINLEN:36
+done
+```
+# now getting the reference genome by running this in the terminal 
+
+datasets download genome accession GCA_964256225.1 --include genome
+unzip ncbi_dataset.zip
+
+
+#step 3 variance calling (third script in the bioinformatics pipeline from jessi)
+
+bwa mem PUAP_ref.fasta PUAP_HAW_07b_R1_paired_trimmed.fastq PUAP_HAW_07b_R2_paired_trimmed.fastq > test.sam

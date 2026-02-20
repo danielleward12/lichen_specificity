@@ -90,15 +90,15 @@ points(liz_coords, pch = 19)
 
 # now going to try to add our own lichen data! - Punctelia appalachensis because it has a reference genome 
 
-but it seems like there are 3 steps that go from the fastq data file to the vcf file which is what we need to work with algatr 
+but it seems like we need to follow 3 steps in the first 3 scripts from https://github.com/jallen73/Lichen_popgen/tree/main to get vcf files for use in algatr 
 
-following the first 3 scripts from https://github.com/jallen73/Lichen_popgen/tree/main to get vcf files for use in algatr 
+
 
 
 the following was done in the terminal 
 
 
-Dowload p. appalachiensis fastq files 
+# step 1 Dowload p. appalachiensis fastq files 
 
 ```{bash}
 wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR344/050/SRR34436550/SRR34436550_1.fastq.gz
@@ -107,7 +107,7 @@ wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR344/051/SRR34436551/SRR34436551_1.fas
 wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR344/051/SRR34436551/SRR34436551_2.fastq.gz
 ```
 
-rename them 
+# rename them 
 ```{bash}
 mv SRR34436550_1.fastq.gz PUAP_HAW_07c_R1_001.fastq.gz
 mv SRR34436550_2.fastq.gz PUAP_HAW_07c_R2_001.fastq.gz
@@ -116,8 +116,8 @@ mv SRR34436551_2.fastq.gz PUAP_HAW_07b_R2_001.fastq.gz
 ```
 
 
-```{bash}
-
+```{bash} 
+#ignore this 
 # mv ~/Desktop/lichen_test/*.fastq.gz ~/Documents/Projects/lichen_specificity/
 cd ~/Documents/Projects/lichen_specificity/lichen_specificity
 ls -lh *.fastq.gz
@@ -129,21 +129,104 @@ ls -lh *.fastq.gz
 ```{bash}
 source /opt/miniconda3/etc/profile.d/conda.sh
 conda activate lichen 
-
 ```
 
 
 ```{bash}
 ls PUAP_*.fastq.gz | sed -e 's/_R._001.*/_R/' | sort | uniq | while read froot ; do
-        trimmomatic PE ${froot}1_001.fastq.gz ${froot}2_001.fastq.gz ${froot}1_paired_trimmed.fastq.gz ${froot}1_unpaired_trimmed.fastq.gz ${froot}2_paired_trimmed.fastq.gz ${froot}2_unpaired_trimmed.fastq.gz -threads 4 -phred33 -trimlog ${froot}.log SLIDINGWINDOW:5:20 LEADING:20 TRAILING:20 MINLEN:36
+    trimmomatic PE \
+        ${froot}1_001.fastq.gz ${froot}2_001.fastq.gz \
+        ${froot}1_paired_trimmed.fastq.gz ${froot}1_unpaired_trimmed.fastq.gz \
+        ${froot}2_paired_trimmed.fastq.gz ${froot}2_unpaired_trimmed.fastq.gz \
+        -threads 4 -phred33 \
+        SLIDINGWINDOW:5:20 LEADING:20 TRAILING:20 MINLEN:36
 done
 ```
-# now getting the reference genome by running this in the terminal 
+# now get the reference genome by running this in the terminal 
 
+```{bash}
 datasets download genome accession GCA_964256225.1 --include genome
 unzip ncbi_dataset.zip
+cp ncbi_dataset/data/GCA_964256225.1/GCA_964256225.1_public_SRR14722169_metabat2_bin.6_genomic.fna PUAP_ref.fasta
+```
+
+#index it 
+```{bash}
+bwa index PUAP_ref.fasta
+```
+
+#unzip and align
+```{bash}
+gunzip -k PUAP_HAW_07b_R1_paired_trimmed.fastq.gz
+gunzip -k PUAP_HAW_07b_R2_paired_trimmed.fastq.gz
+gunzip -k PUAP_HAW_07c_R1_paired_trimmed.fastq.gz
+gunzip -k PUAP_HAW_07c_R2_paired_trimmed.fastq.gz
+
+bwa mem PUAP_ref.fasta PUAP_HAW_07b_R1_paired_trimmed.fastq PUAP_HAW_07b_R2_paired_trimmed.fastq > PUAP_HAW_07b.sam
+bwa mem PUAP_ref.fasta PUAP_HAW_07c_R1_paired_trimmed.fastq PUAP_HAW_07c_R2_paired_trimmed.fastq > PUAP_HAW_07c.sam
+```
+
+```{bash}
+samtools view -b PUAP_HAW_07b.sam | samtools sort --threads 4 > PUAP_HAW_07b.bam
+samtools view -b PUAP_HAW_07c.sam | samtools sort --threads 4 > PUAP_HAW_07c.bam
+```
+
+```{bash}
+samtools addreplacerg -r "ID:07b SM:PUAP_HAW_07b" -o PUAP_HAW_07b.rg.bam PUAP_HAW_07b.bam
+samtools addreplacerg -r "ID:07c SM:PUAP_HAW_07c" -o PUAP_HAW_07c.rg.bam PUAP_HAW_07c.bam
+
+samtools index PUAP_HAW_07b.rg.bam
+samtools index PUAP_HAW_07c.rg.bam
+```
+
+
 
 
 #step 3 variance calling (third script in the bioinformatics pipeline from jessi)
 
-bwa mem PUAP_ref.fasta PUAP_HAW_07b_R1_paired_trimmed.fastq PUAP_HAW_07b_R2_paired_trimmed.fastq > test.sam
+#but nothing is working :((((((((()))))))))
+
+```{bash}
+#!/bin/bash
+## bwa to align reads to reference genome then freebayes to call variants
+## run this in your directory with the trimmed fastq files and a reference genome
+echo "reference genome is the first argument"
+echo "reference genome fasta should end in .fasta"
+echo "the file beginning is the second argument"
+
+bwa index $1
+
+ls $2_*.fastq.gz | sed -e 's/\(.*\)_[R][0-9]\{1,2\}_.*$/\1_R/' | sort | uniq | while read froot ; do
+    bwa mem $1 ${froot}1_paired_trimmed.fastq.gz ${froot}2_paired_trimmed.fastq.gz -t 20 |
+                samtools view -b |
+                samtools sort --threads 20 > ${froot}_$(basename $1 .fasta).bam
+done
+
+ls *.bam | sort | uniq | while read i ; do
+       bamaddrg -b ${i} > $(basename ${i} .bam).rg.bam
+done
+
+ls *rg.bam > rgbamlist.txt
+
+ls *.rg.bam | sort | uniq | while read i ; do
+       samtools index -b -@ 20 ${i}
+done
+
+freebayes -f $1 --min-alternate-fraction 0.3 --min-coverage 10 -p 1 --bam-list rgbamlist.txt > $(basename $1 .fasta)_maf03_mincov10.vcf
+
+##########################################################################################
+#Use the following line if you are working with a reference genome that has more than one contig in it
+#echo {1..32} | tr " " "\n" | parallel -j 14 "freebayes -f $1 -r contig_{} --min-alternate-fraction 0.5 --min-coverage 10 -p 1 --bam-list rgbamlist.txt > $(basename $1 .fasta)_maf05_mincov10.cont_{}.vcf"
+
+#merge the snps from all vcf files
+#ls *.vcf | uniq | while read i; do grep -v '#' $i >> $(basename $1 .fasta)_maf05_mincov10.all.vcf ; done
+
+#check that the sample lists are in the same order for all vcfs
+#cat *cont*.vcf | grep '^#C' | uniq | wc -l
+
+#move the header into a single file, then append it to the beginning of the 'all' vcf
+#grep '#' $(basename $1 .fasta)_maf05_mincov10.cont_10.vcf > header.vcf
+#cat header.vcf $(basename $1 .fasta)_maf05_mincov10.all.vcf > $(basename $1 .fasta)_maf05_mincov10.all.header.vcf
+```
+
+
